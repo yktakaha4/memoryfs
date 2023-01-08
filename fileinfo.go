@@ -9,6 +9,7 @@ type fileinfo struct {
 	name     string
 	size     int64
 	modified time.Time
+	isDir    bool
 	mode     fs.FileMode
 }
 
@@ -45,7 +46,7 @@ func (f fileinfo) ModTime() time.Time {
 
 // IsDir reports whether the entry describes a directory.
 func (f fileinfo) IsDir() bool {
-	return f.Mode().IsDir()
+	return f.isDir
 }
 
 // Sys is the underlying data source of the file (always nil)
