@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/fs"
 	"sync"
-	"time"
 )
 
 type file struct {
@@ -14,13 +13,13 @@ type file struct {
 	info    fileinfo
 	opener  LazyOpener
 	content []byte
+	context *context
 }
 
 type fileAccess struct {
 	file   *file
 	reader io.Reader
 }
-
 
 // LazyOpener provides an io.Reader that can be used to access the content of a file, whatever the actual storage medium.
 // If the LazyOpener returns an io.ReadCloser, it will be closed after each read.
@@ -44,7 +43,7 @@ func (f *file) overwrite(data []byte, perm fs.FileMode) error {
 
 	f.Lock()
 	f.info.size = int64(len(data))
-	f.info.modified = time.Now()
+	f.info.modified = f.context.provideTime()
 	f.info.mode = perm
 	f.Unlock()
 
