@@ -8,16 +8,16 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 )
 
 var separator = string(filepath.Separator)
 
 type dir struct {
 	sync.RWMutex
-	info  fileinfo
-	dirs  map[string]*dir
-	files map[string]*file
+	info    fileinfo
+	dirs    map[string]*dir
+	files   map[string]*file
+	context *context
 }
 
 func (d *dir) Open(name string) (fs.File, error) {
@@ -198,14 +198,15 @@ func (d *dir) MkdirAll(path string, perm fs.FileMode) error {
 			info: fileinfo{
 				name:     parts[0],
 				size:     0x100,
-				modified: time.Now(),
+				modified: d.context.provideTime(),
 				mode:     perm,
 			},
-			dirs:  map[string]*dir{},
-			files: map[string]*file{},
+			dirs:    map[string]*dir{},
+			files:   map[string]*file{},
+			context: d.context,
 		}
 	}
-	d.info.modified = time.Now()
+	d.info.modified = d.context.provideTime()
 	d.Unlock()
 
 	if len(parts) == 1 {
@@ -242,10 +243,11 @@ func (d *dir) WriteFile(path string, data []byte, perm fs.FileMode) error {
 				info: fileinfo{
 					name:     parts[0],
 					size:     int64(len(buffer)),
-					modified: time.Now(),
+					modified: d.context.provideTime(),
 					mode:     perm,
 				},
 				content: buffer,
+				context: d.context,
 			}
 			newFile.opener = func() (io.Reader, error) {
 				return &lazyAccess{
@@ -321,10 +323,11 @@ func (d *dir) WriteLazyFile(path string, opener LazyOpener, perm fs.FileMode) er
 			info: fileinfo{
 				name:     parts[0],
 				size:     0,
-				modified: time.Now(),
+				modified: d.context.provideTime(),
 				mode:     perm,
 			},
-			opener: opener,
+			opener:  opener,
+			context: d.context,
 		}
 		return nil
 	}
