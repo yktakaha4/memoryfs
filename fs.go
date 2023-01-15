@@ -179,6 +179,20 @@ func (m *FS) SetSys(name string, sys interface{}) error {
 	return &fs.PathError{Op: "set sys", Path: name, Err: fs.ErrNotExist}
 }
 
+// SetMode set file mode to file or directory
+func (m *FS) SetMode(name string, perm fs.FileMode) error {
+	name = cleanse(name)
+	if f, err := m.dir.getFile(name); err == nil {
+		f.info.mode = perm | (f.info.mode & ^perm)
+		return nil
+	}
+	if f, err := m.dir.getDir(name); err == nil {
+		f.info.mode = perm | (f.info.mode & ^perm)
+		return nil
+	}
+	return &fs.PathError{Op: "set mode", Path: name, Err: fs.ErrNotExist}
+}
+
 // SetTimeProvider set function to mock generation of current time (default: time.Now())
 func (m *FS) SetTimeProvider(provider func() time.Time) {
 	m.context.provideTime = provider
