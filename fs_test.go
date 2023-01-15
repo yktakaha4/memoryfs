@@ -313,6 +313,31 @@ func Test_AllOperations(t *testing.T) {
 		assert.Error(t, err)
 	})
 
+	t.Run("Set file mode to directory", func(t *testing.T) {
+		perm := fs.FileMode(0o777)
+
+		err := memfs.SetMode("files/a/b/c", perm)
+		assert.NoError(t, err)
+
+		stat, err := memfs.Stat("files/a/b/c")
+		assert.NoError(t, err)
+		assert.Equal(t, perm|fs.ModeDir, stat.Mode())
+	})
+
+	t.Run("Set file mode to file", func(t *testing.T) {
+		perm := fs.FileMode(0o777)
+
+		err := memfs.SetMode("test.txt", perm)
+		assert.NoError(t, err)
+
+		stat, err := memfs.Stat("test.txt")
+		assert.NoError(t, err)
+		assert.Equal(t, perm, stat.Mode())
+
+		err = memfs.SetMode("not_found.txt", perm)
+		assert.Error(t, err)
+	})
+
 	t.Run("Set time provider", func(t *testing.T) {
 		mfs := New()
 
