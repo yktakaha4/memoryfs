@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"path/filepath"
+	"path"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 )
 
-var separator = string(filepath.Separator)
+var separator = "/"
 
 type dir struct {
 	sync.RWMutex
@@ -277,7 +277,7 @@ func (d *dir) glob(pattern string) ([]string, error) {
 	d.RLock()
 	defer d.RUnlock()
 	for name, dir := range d.dirs {
-		if ok, err := filepath.Match(parts[0], name); err != nil {
+		if ok, err := path.Match(parts[0], name); err != nil {
 			return nil, err
 		} else if ok {
 			if len(parts) == 1 {
@@ -296,7 +296,7 @@ func (d *dir) glob(pattern string) ([]string, error) {
 
 	if len(parts) == 1 {
 		for name := range d.files {
-			if ok, err := filepath.Match(parts[0], name); err != nil {
+			if ok, err := path.Match(parts[0], name); err != nil {
 				return nil, err
 			} else if ok {
 				entries = append(entries, name)

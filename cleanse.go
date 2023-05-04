@@ -1,13 +1,13 @@
 package memoryfs
 
 import (
-	"path/filepath"
+	path2 "path"
 	"strings"
 )
 
 func cleanse(path string) string {
 	path = strings.ReplaceAll(path, "/", separator)
-	path = filepath.Clean(path)
+	path = path2.Clean(path)
 	path = strings.TrimPrefix(path, "."+separator)
 	path = strings.TrimPrefix(path, separator)
 	if path == "." {
