@@ -312,6 +312,68 @@ func Test_AllOperations(t *testing.T) {
 		err = memfs.SetSys("not_found.txt", sys)
 		assert.Error(t, err)
 	})
+
+	t.Run("Set file mode to directory", func(t *testing.T) {
+		perm := fs.FileMode(0o777)
+
+		err := memfs.SetMode("files/a/b/c", perm)
+		assert.NoError(t, err)
+
+		stat, err := memfs.Stat("files/a/b/c")
+		assert.NoError(t, err)
+		assert.Equal(t, perm|fs.ModeDir, stat.Mode())
+	})
+
+	t.Run("Set file mode to file", func(t *testing.T) {
+		perm := fs.FileMode(0o777)
+
+		err := memfs.SetMode("test.txt", perm)
+		assert.NoError(t, err)
+
+		stat, err := memfs.Stat("test.txt")
+		assert.NoError(t, err)
+		assert.Equal(t, perm, stat.Mode())
+
+		err = memfs.SetMode("not_found.txt", perm)
+		assert.Error(t, err)
+	})
+
+	t.Run("Set time provider", func(t *testing.T) {
+		mfs := New()
+
+		now := time.Now()
+
+		err := mfs.WriteFile("now.txt", []byte("content"), 0o644)
+		assert.NoError(t, err)
+
+		stat, err := mfs.Stat("now.txt")
+		assert.NoError(t, err)
+		assert.LessOrEqual(t, now, stat.ModTime())
+
+		t1 := time.Date(2112, 9, 3, 12, 34, 56, 321, time.UTC)
+		mfs.SetTimeProvider(func() time.Time {
+			return t1
+		})
+
+		err = mfs.WriteFile("test.txt", []byte("content"), 0o644)
+		assert.NoError(t, err)
+
+		stat, err = mfs.Stat("test.txt")
+		assert.NoError(t, err)
+		assert.Equal(t, t1, stat.ModTime())
+
+		t2 := time.Date(1900, 1, 2, 3, 4, 5, 654, time.UTC)
+		mfs.SetTimeProvider(func() time.Time {
+			return t2
+		})
+
+		err = mfs.MkdirAll("dir", 0o777)
+		assert.NoError(t, err)
+
+		stat, err = mfs.Stat("dir")
+		assert.NoError(t, err)
+		assert.Equal(t, t2, stat.ModTime())
+	})
 }
 
 func Test_ConcurrentWritesToDirectory(t *testing.T) {

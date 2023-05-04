@@ -10,22 +10,28 @@ import (
 
 // FS is an in-memory filesystem
 type FS struct {
-	dir *dir
+	dir     *dir
+	context *context
 }
 
 // New creates a new filesystem
 func New() *FS {
+	ctx := context{
+		provideTime: time.Now,
+	}
 	return &FS{
 		dir: &dir{
 			info: fileinfo{
 				name:     ".",
 				size:     0x100,
-				modified: time.Now(),
+				modified: ctx.provideTime(),
 				mode:     0o0700 | fs.ModeDir,
 			},
-			dirs:  map[string]*dir{},
-			files: map[string]*file{},
+			dirs:    map[string]*dir{},
+			files:   map[string]*file{},
+			context: &ctx,
 		},
+		context: &ctx,
 	}
 }
 
@@ -171,4 +177,23 @@ func (m *FS) SetSys(name string, sys interface{}) error {
 		return nil
 	}
 	return &fs.PathError{Op: "set sys", Path: name, Err: fs.ErrNotExist}
+}
+
+// SetMode set file mode to file or directory
+func (m *FS) SetMode(name string, perm fs.FileMode) error {
+	name = cleanse(name)
+	if f, err := m.dir.getFile(name); err == nil {
+		f.info.mode = perm | (f.info.mode & ^perm)
+		return nil
+	}
+	if f, err := m.dir.getDir(name); err == nil {
+		f.info.mode = perm | (f.info.mode & ^perm)
+		return nil
+	}
+	return &fs.PathError{Op: "set mode", Path: name, Err: fs.ErrNotExist}
+}
+
+// SetTimeProvider set function to mock generation of current time (default: time.Now())
+func (m *FS) SetTimeProvider(provider func() time.Time) {
+	m.context.provideTime = provider
 }

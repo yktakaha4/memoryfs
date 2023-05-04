@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/fs"
 	"sync"
-	"time"
 )
 
 type file struct {
@@ -14,6 +13,7 @@ type file struct {
 	info    fileinfo
 	opener  LazyOpener
 	content []byte
+	context *context
 }
 
 type fileAccess struct {
@@ -43,7 +43,7 @@ func (f *file) overwrite(data []byte, perm fs.FileMode) error {
 
 	f.Lock()
 	f.info.size = int64(len(data))
-	f.info.modified = time.Now()
+	f.info.modified = f.context.provideTime()
 	f.info.mode = perm
 	f.Unlock()
 
